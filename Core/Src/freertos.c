@@ -23,10 +23,10 @@
 #include "main.h"
 #include "task.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
+#include "tim.h" /* 使用 htim3 驱动流水灯 */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +55,13 @@ const osThreadAttr_t defaultTask_attributes = {
     .stack_size = 128 * 4,
     .priority = (osPriority_t)osPriorityNormal,
 };
+/* Definitions for TaskLEDFlowing */
+osThreadId_t TaskLEDFlowingHandle;
+const osThreadAttr_t TaskLEDFlowing_attributes = {
+    .name = "TaskLEDFlowing",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -62,6 +69,7 @@ const osThreadAttr_t defaultTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void StartTaskLEDFlowing(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -95,6 +103,9 @@ void MX_FREERTOS_Init(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of TaskLEDFlowing */
+  TaskLEDFlowingHandle = osThreadNew(StartTaskLEDFlowing, NULL, &TaskLEDFlowing_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -134,11 +145,53 @@ void StartDefaultTask(void *argument)
     /* 其他模块检测到故障时，把对应标志置 1，这里就会播放报错音调：
      *   Buzzer_ErrFlag1 = 1;  → 播放《小星星》（报错音调 1）
      *   Buzzer_ErrFlag2 = 1;  → 播放《欢乐颂》（报错音调 2） */
-    if (Buzzer_ErrFlag1 != 0U) { Buzzer_PlayErrorTone(BUZZER_ERR_1); Buzzer_ErrFlag1 = 0U; }
-    if (Buzzer_ErrFlag2 != 0U) { Buzzer_PlayErrorTone(BUZZER_ERR_2); Buzzer_ErrFlag2 = 0U; }
+    if (Buzzer_ErrFlag1 != 0U)
+    {
+      Buzzer_PlayErrorTone(BUZZER_ERR_1);
+      Buzzer_ErrFlag1 = 0U;
+    }
+    if (Buzzer_ErrFlag2 != 0U)
+    {
+      Buzzer_PlayErrorTone(BUZZER_ERR_2);
+      Buzzer_ErrFlag2 = 0U;
+    }
     osDelay(10);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartTaskLEDFlowing */
+/**
+ * @brief Function implementing the TaskLEDFlowing thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTaskLEDFlowing */
+void StartTaskLEDFlowing(void *argument)
+{
+  /* USER CODE BEGIN StartTaskLEDFlowing */
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  /* Infinite loop */
+  for (;;)
+  {
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 999);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+    osDelay(300);
+
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 999);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+    osDelay(300);
+
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 999);
+    osDelay(300);
+  }
+  /* USER CODE END StartTaskLEDFlowing */
 }
 
 /* Private application code --------------------------------------------------*/
