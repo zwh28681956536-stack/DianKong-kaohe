@@ -26,7 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
-#include "tim.h" /* 使用 htim3 驱动流水灯 */
+#include "tim.h" /* 使用 htim5 驱动流水灯 */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -170,25 +170,25 @@ void StartDefaultTask(void *argument)
 void StartTaskLEDFlowing(void *argument)
 {
   /* USER CODE BEGIN StartTaskLEDFlowing */
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
   /* Infinite loop */
   for (;;)
   {
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 999);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, 999);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_3, 0);
     osDelay(300);
 
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 999);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_2, 999);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_3, 0);
     osDelay(300);
 
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 999);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_3, 999);
     osDelay(300);
   }
   /* USER CODE END StartTaskLEDFlowing */
