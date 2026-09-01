@@ -52,7 +52,10 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+/* MX_FREERTOS_Init() 定义于以 C 编译的 freertos.c，main.c 以 C++ 编译，需 C 链接 */
+extern "C" {
 void MX_FREERTOS_Init(void);
+}
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */

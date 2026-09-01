@@ -51,24 +51,24 @@ typedef struct
 
 /* 上电提示音 —— 按车辆区分 */
 static const BuzzerNote_t boot_melody_0[] = {
-    {523, 250},
+    {4000, 150},
     {0, 50},
-    {523, 250}, /* C5 C5：双短鸣 */
+    {4000, 150}, /* 4kHz 双短鸣（额定频率，最响） */
 };
 static const BuzzerNote_t boot_melody_1[] = {
-    {523, 250},
+    {4000, 150},
     {0, 50},
-    {784, 250}, /* C5 G5：上行二音 */
+    {4500, 150}, /* 4kHz→4.5kHz：上行二音 */
 };
 static const BuzzerNote_t boot_melody_2[] = {
-    {523, 180},
+    {4000, 120},
     {0, 40},
-    {659, 180},
+    {4500, 120},
     {0, 40},
-    {784, 180}, /* C5 E5 G5：上行琶音 */
+    {5000, 120}, /* 4k→4.5k→5k：上行琶音 */
 };
 static const BuzzerNote_t boot_melody_3[] = {
-    {784, 500}, /* G5：单长鸣 */
+    {4000, 400}, /* 4kHz：单长鸣 */
 };
 
 /* 报错音调 1：小星星（Twinkle Twinkle Little Star） */
