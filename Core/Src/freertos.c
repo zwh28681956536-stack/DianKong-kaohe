@@ -19,9 +19,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "cmsis_os.h"
-#include "main.h"
 #include "task.h"
+#include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -54,30 +54,30 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-    .name = "defaultTask",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for TaskLEDFlowing */
 osThreadId_t TaskLEDFlowingHandle;
 const osThreadAttr_t TaskLEDFlowing_attributes = {
-    .name = "TaskLEDFlowing",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "TaskLEDFlowing",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for TaskServo */
 osThreadId_t TaskServoHandle;
 const osThreadAttr_t TaskServo_attributes = {
-    .name = "TaskServo",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "TaskServo",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for TaskMotor */
 osThreadId_t TaskMotorHandle;
 const osThreadAttr_t TaskMotor_attributes = {
-    .name = "TaskMotor",
-    .stack_size = 1256 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "TaskMotor",
+  .stack_size = 1256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,12 +93,11 @@ void StartTaskMotor(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
- * @brief  FreeRTOS initialization
- * @param  None
- * @retval None
- */
-void MX_FREERTOS_Init(void)
-{
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
+void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -139,6 +138,7 @@ void MX_FREERTOS_Init(void)
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
+
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -230,18 +230,19 @@ void StartTaskServo(void *argument)
 {
   /* USER CODE BEGIN StartTaskServo */
   /* Infinite loop */
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  __HAL_TIM_MOE_ENABLE(&htim1);   /* 高级定时器必须打开主输出(MOE)，否则 PWM 不输出 */
   for (;;)
   {
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 500); /* 0° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 500); /* 0° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 1000); /* 45° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1000); /* 45° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 1500); /* 90° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1500); /* 90° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2000); /* 135° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 2000); /* 135° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2500); /* 180° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 2500); /* 180° */
     osDelay(1000);
   }
   /* USER CODE END StartTaskServo */
@@ -296,3 +297,4 @@ void StartTaskMotor(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
+
