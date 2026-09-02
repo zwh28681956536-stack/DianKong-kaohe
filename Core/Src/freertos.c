@@ -23,10 +23,14 @@
 #include "main.h"
 #include "task.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
+#include "motor.h"
+#include "pid.h"
 #include "tim.h" /* 使用 htim5 驱动流水灯 */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,7 +71,14 @@ osThreadId_t TaskServoHandle;
 const osThreadAttr_t TaskServo_attributes = {
     .name = "TaskServo",
     .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityBelowNormal,
+    .priority = (osPriority_t)osPriorityNormal,
+};
+/* Definitions for TaskMotor */
+osThreadId_t TaskMotorHandle;
+const osThreadAttr_t TaskMotor_attributes = {
+    .name = "TaskMotor",
+    .stack_size = 1256 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,6 +89,7 @@ const osThreadAttr_t TaskServo_attributes = {
 void StartDefaultTask(void *argument);
 void StartTaskLEDFlowing(void *argument);
 void StartTaskServo(void *argument);
+void StartTaskMotor(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -117,6 +129,9 @@ void MX_FREERTOS_Init(void)
 
   /* creation of TaskServo */
   TaskServoHandle = osThreadNew(StartTaskServo, NULL, &TaskServo_attributes);
+
+  /* creation of TaskMotor */
+  TaskMotorHandle = osThreadNew(StartTaskMotor, NULL, &TaskMotor_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -231,6 +246,51 @@ void StartTaskServo(void *argument)
     osDelay(1000);
   }
   /* USER CODE END StartTaskServo */
+}
+
+/* USER CODE BEGIN Header_StartTaskMotor */
+/**
+ * @brief Function implementing the TaskMotor thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTaskMotor */
+void StartTaskMotor(void *argument)
+{
+  /* USER CODE BEGIN StartTaskMotor */
+
+  /* 电机 + PID 初始化（只一次） */
+  Motor_Init();
+  PID_t angle_pid;
+  PID_Init(&angle_pid, 50.0f, 0.0f, 0.0f, 4000.0f); /* 角度环：kp=50，输出限幅±4000 */
+
+  uint32_t t0 = osKernelGetTickCount();
+
+  /* Infinite loop */
+  for (;;)
+  {
+    float now_angle = Motor_GetAngleDeg(); /* 当前输出轴角度(°) */
+    uint32_t t = osKernelGetTickCount() - t0;
+
+    /* 2 秒内：0°→90°→-90° */
+    float target_angle = 0.0f;
+    if (t < 1000U)
+    {
+      target_angle = 90.0f; /* 0~1s：目标 90° */
+    }
+    else if (t < 2000U)
+    {
+      target_angle = -90.0f; /* 1~2s：目标 -90° */
+    }
+    /* t >= 2000 后保持 -90° */
+
+    angle_pid.target = target_angle;
+    float current = PID_Calc(&angle_pid, now_angle); /* 角度误差 → 电流指令 */
+    Motor_SendCurrent((int16_t)current, 0, 0, 0);    /* 只控电机0，其余给0 */
+
+    osDelay(1); /* 1kHz 控制周期 */
+  }
+  /* USER CODE END StartTaskMotor */
 }
 
 /* Private application code --------------------------------------------------*/

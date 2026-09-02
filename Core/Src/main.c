@@ -18,11 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "can.h"
 #include "cmsis_os.h"
 #include "dma.h"
 #include "gpio.h"
 #include "tim.h"
 #include "usart.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -100,6 +102,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM5_Init();
   MX_TIM3_Init();
+  MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
   /* 上电蜂鸣器提示音：每次复位/烧录上电后都会响一次 */
   Buzzer_Init();
