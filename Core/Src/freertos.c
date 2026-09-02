@@ -23,7 +23,6 @@
 #include "main.h"
 #include "task.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
@@ -159,10 +158,10 @@ void StartDefaultTask(void *argument)
    *   Buzzer_PlayErrorTone(BUZZER_ERR_2);   // 报错音调 2：欢乐颂
    * 下方演示：上电后各播放一次，便于听音确认两种音调正常。
    */
-  osDelay(1000);
-  Buzzer_PlayErrorTone(BUZZER_ERR_1);
-  osDelay(800);
-  Buzzer_PlayErrorTone(BUZZER_ERR_2);
+  // osDelay(1000);
+  // Buzzer_PlayErrorTone(BUZZER_ERR_1);
+  // osDelay(800);
+  // Buzzer_PlayErrorTone(BUZZER_ERR_2);
 
   /* Infinite loop */
   for (;;)

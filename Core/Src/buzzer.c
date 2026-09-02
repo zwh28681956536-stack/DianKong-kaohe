@@ -143,10 +143,10 @@ static void Buzzer_SetNote(uint16_t freq)
     arr = 1U;
   }
 
-  /* 切换频率：计数器清零，重载 ARR 与 50% 占空比 */
+  /* 切换频率：计数器清零，重载 ARR 与 30% 占空比 */
   __HAL_TIM_SET_COUNTER(&htim4, 0U);
   __HAL_TIM_SET_AUTORELOAD(&htim4, arr);
-  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, arr / 2U);
+  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, arr * 3U / 10U);
 }
 
 /* 延时：调度器运行前用 HAL_Delay，运行后用 osDelay（不阻塞其它任务） */
