@@ -19,9 +19,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
 #include "cmsis_os.h"
+#include "main.h"
+#include "task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -51,16 +51,23 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "defaultTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for TaskLEDFlowing */
 osThreadId_t TaskLEDFlowingHandle;
 const osThreadAttr_t TaskLEDFlowing_attributes = {
-  .name = "TaskLEDFlowing",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "TaskLEDFlowing",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
+};
+/* Definitions for TaskServo */
+osThreadId_t TaskServoHandle;
+const osThreadAttr_t TaskServo_attributes = {
+    .name = "TaskServo",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityBelowNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,15 +77,17 @@ const osThreadAttr_t TaskLEDFlowing_attributes = {
 
 void StartDefaultTask(void *argument);
 void StartTaskLEDFlowing(void *argument);
+void StartTaskServo(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
-void MX_FREERTOS_Init(void) {
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
+void MX_FREERTOS_Init(void)
+{
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -106,6 +115,9 @@ void MX_FREERTOS_Init(void) {
   /* creation of TaskLEDFlowing */
   TaskLEDFlowingHandle = osThreadNew(StartTaskLEDFlowing, NULL, &TaskLEDFlowing_attributes);
 
+  /* creation of TaskServo */
+  TaskServoHandle = osThreadNew(StartTaskServo, NULL, &TaskServo_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -113,7 +125,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -194,8 +205,35 @@ void StartTaskLEDFlowing(void *argument)
   /* USER CODE END StartTaskLEDFlowing */
 }
 
+/* USER CODE BEGIN Header_StartTaskServo */
+/**
+ * @brief Function implementing the TaskServo thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTaskServo */
+void StartTaskServo(void *argument)
+{
+  /* USER CODE BEGIN StartTaskServo */
+  /* Infinite loop */
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  for (;;)
+  {
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 500); /* 0° */
+    osDelay(1000);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 1000); /* 45° */
+    osDelay(1000);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 1500); /* 90° */
+    osDelay(1000);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2000); /* 135° */
+    osDelay(1000);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2500); /* 180° */
+    osDelay(1000);
+  }
+  /* USER CODE END StartTaskServo */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
