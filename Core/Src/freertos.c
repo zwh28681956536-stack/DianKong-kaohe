@@ -230,19 +230,19 @@ void StartTaskServo(void *argument)
 {
   /* USER CODE BEGIN StartTaskServo */
   /* Infinite loop */
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  __HAL_TIM_MOE_ENABLE(&htim1);   /* 高级定时器必须打开主输出(MOE)，否则 PWM 不输出 */
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  __HAL_TIM_MOE_ENABLE(&htim1); /* 高级定时器必须打开主输出(MOE)，否则 PWM 不输出 */
   for (;;)
   {
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 500); /* 0° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 500); /* 0° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1000); /* 45° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 1000); /* 45° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1500); /* 90° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 1500); /* 90° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 2000); /* 135° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 2000); /* 135° */
     osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 2500); /* 180° */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 2500); /* 180° */
     osDelay(1000);
   }
   /* USER CODE END StartTaskServo */
