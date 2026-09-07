@@ -38,8 +38,8 @@ void PID_Init(PID_t *pid, float kp, float ki, float kd, float out_limit);
 /* 设置 P、D 项单独限幅 */
 void PID_SetTermLimit(PID_t *pid, float p_limit, float d_limit);
 
-/* 计算一次 PID 输出：传入当前值（角度），返回输出（电流指令） */
-float PID_Calc(PID_t *pid, float current);
+/* 计算一次 PID 输出：传入当前值和控制周期 dt(秒)，返回输出（电流指令） */
+float PID_Calc(PID_t *pid, float current, float dt);
 
 /* USER CODE BEGIN Prototypes */
 

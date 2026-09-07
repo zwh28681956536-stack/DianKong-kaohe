@@ -32,17 +32,19 @@ void PID_SetTermLimit(PID_t *pid, float p_limit, float d_limit)
   pid->d_limit = d_limit;
 }
 
-float PID_Calc(PID_t *pid, float current)
+float PID_Calc(PID_t *pid, float current, float dt)
 {
+  if (dt <= 0.0f) dt = 0.001f;   /* 防止除零/无 dt 时异常 */
+
   float error = pid->target - current;   /* 误差 = 目标 - 当前 */
 
-  /* 积分项（带积分限幅，防止积分饱和） */
-  pid->integral += error;
+  /* 积分项（乘 dt：积分按秒累加，带限幅防饱和） */
+  pid->integral += error * dt;
   float i_max = (pid->ki > 0.001f) ? (pid->out_limit / pid->ki) : 0.0f;
   if (pid->integral >  i_max) pid->integral =  i_max;
   if (pid->integral < -i_max) pid->integral = -i_max;
 
-  float diff = error - pid->prev_error;
+  float diff = (error - pid->prev_error) / dt;   /* 微分：误差变化率(每秒) */
   pid->prev_error = error;
 
   /* 比例项 P（单独限幅） */

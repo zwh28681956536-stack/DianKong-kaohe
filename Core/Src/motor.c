@@ -13,8 +13,8 @@
 
 /* USER CODE BEGIN 0 */
 
-/* 减速比（M3508 默认 359:1，实际以你的电机为准） */
-#define MOTOR_GEAR_RATIO 359.09f
+/* 减速比（你的电机减速箱 19:1，实际以你的电机为准） */
+#define MOTOR_GEAR_RATIO 19.0f
 
 /* 编码器一圈的计数（13 位，0~8191） */
 #define MOTOR_ENCODER_PER_REV 8192u
@@ -25,13 +25,17 @@ Motor_t motor[4];
 static int32_t wrap_count = 0;
 static uint16_t last_raw = 0;
 static uint8_t angle_inited = 0;
+static int32_t home_raw = 0; /* 首帧位置：作为相对 0° 的参考点 */
 
 /* 判断转子角度是否跨过了 0 点，累加圈数（用于多圈角度） */
 static void Motor_UnwrapAngle(uint16_t raw)
 {
   if (angle_inited == 0U)
   {
+    /* 上电后第一帧有效反馈：作为相对 0°，M3508 无机械零位 */
     last_raw = raw;
+    wrap_count = 0;
+    home_raw = (int32_t)raw;
     angle_inited = 1U;
     return;
   }
@@ -75,14 +79,15 @@ void Motor_Init(void)
 void Motor_SendCurrent(int16_t c1, int16_t c2, int16_t c3, int16_t c4)
 {
   uint8_t data[8];
-  data[0] = (uint8_t)(c1 & 0xFF);
-  data[1] = (uint8_t)((c1 >> 8) & 0xFF);
-  data[2] = (uint8_t)(c2 & 0xFF);
-  data[3] = (uint8_t)((c2 >> 8) & 0xFF);
-  data[4] = (uint8_t)(c3 & 0xFF);
-  data[5] = (uint8_t)((c3 >> 8) & 0xFF);
-  data[6] = (uint8_t)(c4 & 0xFF);
-  data[7] = (uint8_t)((c4 >> 8) & 0xFF);
+  /* C620 电流指令：16 位值高字节在前 */
+  data[0] = (uint8_t)((c1 >> 8) & 0xFF);
+  data[1] = (uint8_t)(c1 & 0xFF);
+  data[2] = (uint8_t)((c2 >> 8) & 0xFF);
+  data[3] = (uint8_t)(c2 & 0xFF);
+  data[4] = (uint8_t)((c3 >> 8) & 0xFF);
+  data[5] = (uint8_t)(c3 & 0xFF);
+  data[6] = (uint8_t)((c4 >> 8) & 0xFF);
+  data[7] = (uint8_t)(c4 & 0xFF);
 
   CAN_TxHeaderTypeDef TxHeader = {0};
   TxHeader.StdId = 0x200;
@@ -108,9 +113,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   if (RxHeader.StdId >= 0x201 && RxHeader.StdId <= 0x204)
   {
     uint8_t idx = (uint8_t)(RxHeader.StdId - 0x201);
-    motor[idx].speed_rpm = (int16_t)(data[0] | ((uint16_t)data[1] << 8));
-    motor[idx].angle_raw = (uint16_t)(data[2] | ((uint16_t)data[3] << 8));
-    motor[idx].torque_current = (int16_t)(data[4] | ((uint16_t)data[5] << 8));
+    /* C620 反馈：data[0..1]=角度, data[2..3]=转速, data[4..5]=电流，均高字节在前 */
+    motor[idx].angle_raw = (uint16_t)(((uint16_t)data[0] << 8) | data[1]);
+    motor[idx].speed_rpm = (int16_t)(((uint16_t)data[2] << 8) | data[3]);
+    motor[idx].torque_current = (int16_t)(((uint16_t)data[4] << 8) | data[5]);
     motor[idx].online = 1U;
     if (idx == 1U)
     {
@@ -119,11 +125,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   }
 }
 
-/* 读取电机1 输出轴角度(°)：多圈累计角度 ÷ 减速比 */
+/* 读取电机1 输出轴角度(°)：相对上电首帧位置的多圈累计角度 ÷ 减速比 */
 float Motor_GetAngleDeg(void)
 {
-  int32_t abs_raw = (int32_t)wrap_count * (int32_t)MOTOR_ENCODER_PER_REV + (int32_t)last_raw;
+  int32_t abs_raw = (int32_t)wrap_count * (int32_t)MOTOR_ENCODER_PER_REV + (int32_t)last_raw - home_raw;
   return (float)abs_raw * 360.0f / (float)MOTOR_ENCODER_PER_REV / MOTOR_GEAR_RATIO;
+}
+
+/* 读取电机1 输出轴角速度(°/s)：转子转速 rpm ÷ 减速比 × 6（1 rpm = 6°/s） */
+float Motor_GetSpeedDegPerSec(void)
+{
+  return (float)motor[1].speed_rpm / MOTOR_GEAR_RATIO * 6.0f;
 }
 
 /* USER CODE BEGIN 1 */

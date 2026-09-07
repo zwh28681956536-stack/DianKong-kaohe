@@ -19,16 +19,18 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
 #include "cmsis_os.h"
+#include "main.h"
+#include "task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
 #include "motor.h"
 #include "pid.h"
-#include "tim.h" /* 使用 htim5 驱动流水灯 */
+#include "tim.h"   /* 使用 htim5 驱动流水灯 */
+#include "usart.h" /* huart1：串口调试输出 */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -54,30 +56,30 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "defaultTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for TaskLEDFlowing */
 osThreadId_t TaskLEDFlowingHandle;
 const osThreadAttr_t TaskLEDFlowing_attributes = {
-  .name = "TaskLEDFlowing",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "TaskLEDFlowing",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for TaskServo */
 osThreadId_t TaskServoHandle;
 const osThreadAttr_t TaskServo_attributes = {
-  .name = "TaskServo",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "TaskServo",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for TaskMotor */
 osThreadId_t TaskMotorHandle;
 const osThreadAttr_t TaskMotor_attributes = {
-  .name = "TaskMotor",
-  .stack_size = 1256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "TaskMotor",
+    .stack_size = 1256 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,11 +95,12 @@ void StartTaskMotor(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
-void MX_FREERTOS_Init(void) {
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
+void MX_FREERTOS_Init(void)
+{
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -138,7 +141,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -259,34 +261,70 @@ void StartTaskMotor(void *argument)
 {
   /* USER CODE BEGIN StartTaskMotor */
 
-  /* 电机 + PID 初始化（只一次） */
+  /* 电机初始化（只一次） */
   Motor_Init();
-  PID_t angle_pid;
-  PID_Init(&angle_pid, 50.0f, 0.0f, 0.0f, 4000.0f); /* 角度环：kp=50，输出限幅±4000 */
 
+  /* 双环 PID：
+   * 外环 角度环：目标角度 vs 当前角度 → 输出"目标角速度"（先 P-only）
+   * 内环 速度环：目标角速度 vs 当前角速度 → 输出"电流指令"（先 P-only） */
+  PID_t angle_pid;
+  PID_Init(&angle_pid, 1.0f, 0.0f, 0.0f, 200.0f);  /* 外环 kp=1，目标转速限幅 ±200°/s */
+  PID_t speed_pid;
+  PID_Init(&speed_pid, 20.0f, 0.0f, 0.0f, 2000.0f); /* 内环 kp=20，电流限幅 ±2000 */
+
+  float target_pos = 0.0f; /* 目标角度（精确两秒轨迹生成） */
   uint32_t t0 = osKernelGetTickCount();
+  uint32_t last_t = t0;
+  uint32_t dbg_cnt = 0U; /* 串口调试节流计数 */
 
   /* Infinite loop */
   for (;;)
   {
-    float now_angle = Motor_GetAngleDeg(); /* 当前输出轴角度(°) */
-    uint32_t t = osKernelGetTickCount() - t0;
+    uint32_t now_t = osKernelGetTickCount();
+    float dt = (float)(now_t - last_t) / 1000.0f; /* 距上一周期(秒) */
+    last_t = now_t;
+    float t = (float)(now_t - t0) / 1000.0f;
 
-    /* 2 秒内：0°→90°→-90° */
-    float target_angle = 0.0f;
-    if (t < 1000U)
+    /* 精确两秒轨迹：
+     * 0~1s：0° → 90°（90°/s）
+     * 1~2s：90° → -90°（180°/s）
+     * 2s 后：保持 -90° */
+    if (t < 1.0f)
     {
-      target_angle = 90.0f; /* 0~1s：目标 90° */
+      target_pos = 90.0f * t;
     }
-    else if (t < 2000U)
+    else if (t < 2.0f)
     {
-      target_angle = -90.0f; /* 1~2s：目标 -90° */
+      target_pos = 90.0f - 180.0f * (t - 1.0f);
     }
-    /* t >= 2000 后保持 -90° */
+    else
+    {
+      target_pos = -90.0f;
+    }
 
-    angle_pid.target = target_angle;
-    float current = PID_Calc(&angle_pid, now_angle); /* 角度误差 → 电流指令 */
-    Motor_SendCurrent(0, (int16_t)current, 0, 0);    /* 只控电机1，其余给0 */
+    float now_angle = Motor_GetAngleDeg();       /* 当前输出轴角度(°) */
+    float now_speed = Motor_GetSpeedDegPerSec(); /* 当前输出轴角速度(°/s) */
+
+    /* 外环：角度误差 → 目标角速度 */
+    angle_pid.target = target_pos;
+    float target_speed = PID_Calc(&angle_pid, now_angle, dt);
+
+    /* 内环：转速误差 → 电流指令 */
+    speed_pid.target = target_speed;
+    float current = PID_Calc(&speed_pid, now_speed, dt);
+
+    Motor_SendCurrent(0, (int16_t)current, 0, 0); /* 发给电机1（第2槽）电流 */
+
+    /* 串口调试：每 100ms 打印当前角度/目标/电流（看反馈跟不跟得上） */
+    if (++dbg_cnt >= 100U)
+    {
+      dbg_cnt = 0U;
+      char buf[80];
+      int n = snprintf(buf, sizeof(buf), "ang=%.1f tgt=%.1f spd=%.1f cur=%d\r\n",
+                       (double)now_angle, (double)target_pos,
+                       (double)now_speed, (int)current);
+      HAL_UART_Transmit(&huart1, (uint8_t *)buf, (uint16_t)n, 10);
+    }
 
     osDelay(1); /* 1kHz 控制周期 */
   }
@@ -297,4 +335,3 @@ void StartTaskMotor(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-

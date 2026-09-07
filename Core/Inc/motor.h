@@ -43,6 +43,9 @@ void Motor_SendCurrent(int16_t c1, int16_t c2, int16_t c3, int16_t c4);
 /* 读取电机0 的输出轴角度(°)，已按减速比换算并处理多圈回绕 */
 float Motor_GetAngleDeg(void);
 
+/* 读取电机 输出轴角速度(°/s)：转子转速 ÷ 减速比 × 6 */
+float Motor_GetSpeedDegPerSec(void);
+
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */
