@@ -112,14 +112,14 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     motor[idx].angle_raw = (uint16_t)(data[2] | ((uint16_t)data[3] << 8));
     motor[idx].torque_current = (int16_t)(data[4] | ((uint16_t)data[5] << 8));
     motor[idx].online = 1U;
-    if (idx == 0U)
+    if (idx == 1U)
     {
-      Motor_UnwrapAngle(motor[0].angle_raw);
+      Motor_UnwrapAngle(motor[1].angle_raw);
     }
   }
 }
 
-/* 读取电机0 输出轴角度(°)：多圈累计角度 ÷ 减速比 */
+/* 读取电机1 输出轴角度(°)：多圈累计角度 ÷ 减速比 */
 float Motor_GetAngleDeg(void)
 {
   int32_t abs_raw = (int32_t)wrap_count * (int32_t)MOTOR_ENCODER_PER_REV + (int32_t)last_raw;

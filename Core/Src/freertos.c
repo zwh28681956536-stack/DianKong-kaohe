@@ -286,7 +286,7 @@ void StartTaskMotor(void *argument)
 
     angle_pid.target = target_angle;
     float current = PID_Calc(&angle_pid, now_angle); /* 角度误差 → 电流指令 */
-    Motor_SendCurrent((int16_t)current, 0, 0, 0);    /* 只控电机0，其余给0 */
+    Motor_SendCurrent(0, (int16_t)current, 0, 0);    /* 只控电机1，其余给0 */
 
     osDelay(1); /* 1kHz 控制周期 */
   }
