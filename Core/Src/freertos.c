@@ -31,6 +31,7 @@
 #include "tim.h"   /* 使用 htim5 驱动流水灯 */
 #include "usart.h" /* huart1：串口调试输出 */
 #include <stdio.h>
+#include <string.h> /* memcpy：JustFloat 打包 */
 
 /* USER CODE END Includes */
 
@@ -51,6 +52,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+/* Synex/VOFA+ 上传的全局变量：控制任务每周期更新，Synex_UploadJustFloat() 读取发送 */
+float g_synex_angle   = 0.0f; /* 当前角度(°) */
+float g_synex_target  = 0.0f; /* 目标角度(°) */
+float g_synex_speed   = 0.0f; /* 当前转速(°/s) */
+float g_synex_current = 0.0f; /* 电流指令 */
+/* USER CODE END Variables */
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -84,6 +91,8 @@ const osThreadAttr_t TaskMotor_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+void Synex_UploadJustFloat(void); /* JustFloat 波形上传 */
+/* USER CODE END FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
@@ -334,15 +343,16 @@ void StartTaskMotor(void *argument)
 
     Motor_SendCurrent(0, (int16_t)current, 0, 0); /* 发给电机1（第2槽）电流 */
 
-    /* 串口调试：每 100ms 打印当前角度/目标/电流（看反馈跟不跟得上） */
-    if (++dbg_cnt >= 100U)
+    /* 更新 Synex 上传用的全局变量 */
+    g_synex_angle   = now_angle;
+    g_synex_target  = target_pos;
+    g_synex_speed   = now_speed;
+    g_synex_current = (float)current;
+
+    if (++dbg_cnt >= 10U)  /* 每 10ms(100Hz) 调一次上传函数 */
     {
       dbg_cnt = 0U;
-      char buf[80];
-      int n = snprintf(buf, sizeof(buf), "ang=%.1f tgt=%.1f spd=%.1f cur=%d\r\n",
-                       (double)now_angle, (double)target_pos,
-                       (double)now_speed, (int)current);
-      HAL_UART_Transmit(&huart1, (uint8_t *)buf, (uint16_t)n, 10);
+      Synex_UploadJustFloat();
     }
 
     osDelay(1); /* 1kHz 控制周期 */
@@ -352,6 +362,18 @@ void StartTaskMotor(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
+/* JustFloat 协议：4 个 float32(小端) + 帧尾 0x7F800000(+inf)，走 huart1(USART1) */
+void Synex_UploadJustFloat(void)
+{
+  uint32_t frame[5];
+  memcpy(&frame[0], &g_synex_angle, 4);    /* 通道0：当前角度 */
+  memcpy(&frame[1], &g_synex_target, 4);   /* 通道1：目标角度 */
+  memcpy(&frame[2], &g_synex_speed, 4);    /* 通道2：当前转速 */
+  memcpy(&frame[3], &g_synex_current, 4);  /* 通道3：电流 */
+  frame[4] = 0x7F800000u;                  /* JustFloat 帧尾 = +inf */
+  HAL_UART_Transmit(&huart1, (uint8_t *)frame, sizeof(frame), 10);
+}
 
 /* USER CODE END Application */
 
