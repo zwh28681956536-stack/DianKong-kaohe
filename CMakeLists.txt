@@ -64,6 +64,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Src/buzzer.c
     ${CMAKE_SOURCE_DIR}/Core/Src/motor.c
     ${CMAKE_SOURCE_DIR}/Core/Src/pid.c
+    ${CMAKE_SOURCE_DIR}/Core/Src/synex.c
 )
 
 # Add include paths
