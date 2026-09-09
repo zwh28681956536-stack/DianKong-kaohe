@@ -23,14 +23,13 @@
 #include "main.h"
 #include "task.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buzzer.h"
 #include "motor.h"
 #include "pid.h"
-#include "tim.h"   /* 使用 htim5 驱动流水灯 */
 #include "synex.h" /* 上位机串口通信（JustFloat 上传 + 在线调参命令） */
+#include "tim.h"   /* 使用 htim5 驱动流水灯 */
 
 /* USER CODE END Includes */
 
@@ -268,8 +267,8 @@ void StartTaskMotor(void *argument)
   Synex_Init();
 
   /* 角度环 PID 增益：初值可被 Synex 命令在线修改 */
-  float kp_angle = 1.0f;
-  float ki_angle = 0.5f;
+  float kp_angle = 15.0f;
+  float ki_angle = 1.0f;
   float kd_angle = 0.0f;
 
   /* 双环 PID：角度环(外) → 速度环(内) */
@@ -283,7 +282,7 @@ void StartTaskMotor(void *argument)
   float last_motion_dir = 0.0f; /* 上一次目标移动方向 +1/-1/0 */
   uint32_t t0 = osKernelGetTickCount();
   uint32_t last_t = t0;
-  uint32_t send_tick = 0U;      /* 串口上传节流计数 */
+  uint32_t send_tick = 0U; /* 串口上传节流计数 */
 
   /* Infinite loop */
   for (;;)
@@ -334,9 +333,18 @@ void StartTaskMotor(void *argument)
     {
       float val;
       uint8_t cmd = Synex_PollCommand(&val);
-      if (cmd == 1u) { kp_angle = val; }
-      else if (cmd == 2u) { ki_angle = val; }
-      else if (cmd == 3u) { kd_angle = val; }
+      if (cmd == 1u)
+      {
+        kp_angle = val;
+      }
+      else if (cmd == 2u)
+      {
+        ki_angle = val;
+      }
+      else if (cmd == 3u)
+      {
+        kd_angle = val;
+      }
     }
     angle_pid.kp = kp_angle; /* 让新增益立刻生效 */
     angle_pid.ki = ki_angle;
