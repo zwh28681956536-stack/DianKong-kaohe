@@ -267,8 +267,8 @@ void StartTaskMotor(void *argument)
   Synex_Init();
 
   /* 角度环 PID 增益：初值可被 Synex 命令在线修改 */
-  float kp_angle = 15.0f;
-  float ki_angle = 1.0f;
+  float kp_angle = 27.0f;
+  float ki_angle = 2.0f;
   float kd_angle = 0.0f;
 
   /* 双环 PID：角度环(外) → 速度环(内) */
